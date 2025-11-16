@@ -112,7 +112,7 @@ void setup() {
   Serial.println("Digite 'ligar' ou 'desligar' e pressione Enter.");
 }
 
-void loop() {
+/*void loop() {
   // Esta linha processa as requisições HTTP
   server.handleClient(); 
 
@@ -131,4 +131,4 @@ void loop() {
       handleDesligar();
     }
   }
-}
+}*/

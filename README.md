@@ -1,19 +1,22 @@
-Projeto: Smart feeder monitor com ESP32
+Projeto Smart feeder monitor com ESP32
 
 Sistema IoT de monitoramento do nível de ração em comedouros de gatos, capaz de enviar uma requisição Wi-Fi quando acionado o alerta para dispensar ração no pote.
 
-Funcionalidades
+Funcionalidades:
+
 Servidor Web: O ESP32 hospeda uma página HTML acessível pela rede local.
 Controle Wi-Fi: Conecta-se a uma rede Wi-Fi local para receber requisições.
 Interface Simples: A página HTML possui dois botões grandes (Ligar / Desligar) otimizados para uso em celulares.
 Feedback de Estado: A página é atualizada para mostrar o estado atual do LED (Ligado ou Desligado).
 
-Hardware Necessário
+Hardware Necessário:
+
 Placa ESP32 Dev Module (ou similar)
 LED (no projeto, foi utilizado o LED onboard do pino 2)
 Cabo USB para alimentação e upload do código
 
-Como Usar (Passo a Passo)
+Como Usar (Passo a Passo):
+
 Para rodar este projeto na sua própria placa, siga os passos:
 Clone ou Baixe: Baixe os arquivos deste repositório.
 Abra na IDE: Abra o arquivo .ino na sua Arduino IDE (ou editor de preferência).
@@ -31,6 +34,7 @@ IP: 192.168.1.10
 
 
 Acesse pelo Celular:
+
 Garanta que seu celular está conectado na mesma rede Wi-Fi que o ESP32.
 Abra o navegador do celular e digite o endereço de IP que apareceu no Monitor Serial (ex: http://192.168.1.10).
 A página com os botões "LIGAR" e "DESLIGAR" irá aparecer.

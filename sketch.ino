@@ -1,7 +1,6 @@
 #include <WiFi.h>
 #include <WebServer.h>
 
-// --- (IMPORTANTE!) ATUALIZE AQUI AMANHÃ ---
 const char* ssid = "SEU_WIFI_AQUI";     // O nome da rede Wi-Fi da sua sala/casa
 const char* password = "SUA_SENHA_AQUI"; // A senha do Wi-Fi
 
@@ -117,7 +116,7 @@ void loop() {
   // Esta linha processa as requisições HTTP
   server.handleClient(); 
 
-  // --- GATILHO DE SIMULAÇÃO (PARA TESTAR NO WOKWI HOJE) ---
+  // --- GATILHO DE SIMULAÇÃO ---
   // Este bloco permite simular os cliques do celular via Monitor Serial
   if (Serial.available() > 0) {
     String comando = Serial.readStringUntil('\n');

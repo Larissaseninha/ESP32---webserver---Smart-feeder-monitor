@@ -1,8 +1,8 @@
 Projeto Smart feeder monitor com ESP32.
 
 Integrantes do projeto:
-KADISH BERNARDO
-LARISSA SENA PEREIRA
+KADISH BERNARDO;
+LARISSA SENA PEREIRA;
 MURILO MENDES SANTO SARDÃO
 
 

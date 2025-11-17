@@ -1,4 +1,10 @@
-Projeto Smart feeder monitor com ESP32
+Projeto Smart feeder monitor com ESP32.
+
+Integrantes do projeto:
+KADISH BERNARDO
+LARISSA SENA PEREIRA
+MURILO MENDES SANTO SARDÃO
+
 
 Sistema IoT de monitoramento do nível de ração em comedouros de gatos, capaz de enviar uma requisição Wi-Fi quando acionado o alerta para dispensar ração no pote.
 

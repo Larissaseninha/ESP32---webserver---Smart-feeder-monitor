@@ -1,134 +1,216 @@
 #include <WiFi.h>
 #include <WebServer.h>
 
-const char* ssid = "SEU_WIFI_AQUI";     // O nome da rede Wi-Fi da sua sala/casa
-const char* password = "SUA_SENHA_AQUI"; // A senha do Wi-Fi
+// --- Configurações do Wi-Fi ---
+const char* ssid = "Wokwi-GUEST";
+const char* password = "";
+const int WIFI_CHANNEL = 6; // Acelera a conexão no Wokwi
 
-// --- Cria o objeto do Servidor Web na porta 80 ---
-WebServer server(80);
-
-// --- Definições dos Pinos ---
-// Usaremos o LED embutido (onboard) no pino 2
+// --- Definições de Hardware ---
+const int PINO_BOTAO = 0;
 const int PINO_LED = 2;
 
-// --- Variável de Estado ---
-bool ledEstaLigado = false; // Controla o estado atual do LED
+// --- Variáveis de Estado ---
+bool ledAcionado = false;
+unsigned long tempoInicioAcionamento = 0;
+const unsigned long DURACAO_ACIONAMENTO = 5000; // 5 segundos
 
-// --- Handlers (Manipuladores) do Servidor Web ---
+// --- Servidor Web ---
+WebServer server(80);
 
-// Esta função será chamada quando alguém acessar a rota "/ligar"
-void handleLigar() {
-  digitalWrite(PINO_LED, HIGH); // Liga o LED
-  ledEstaLigado = true;
-  Serial.println("Comando HTTP: LIGAR");
-  
-  // Redireciona o navegador de volta para a página principal
-  server.sendHeader("Location", "/");
-  server.send(302, "text/plain", "Redirecionando...");
-}
+// =================================================================================
+// CÓDIGO HTML + CSS + JAVASCRIPT (Armazenado na memória flash para economizar RAM)
+// =================================================================================
+const char index_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE HTML><html>
+<head>
+  <title>Painel ESP32</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <style>
+    /* Estilo Geral e Responsivo */
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; text-align: center; margin: 0; padding: 0; }
+    h2 { color: #333; margin-bottom: 20px; }
+    
+    /* O Card Central */
+    .card { background: white; max-width: 400px; margin: 50px auto; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    
+    /* O Indicador de Status (Bolinha) */
+    .status-box { margin-bottom: 30px; font-size: 1.2rem; color: #555; }
+    .dot { height: 15px; width: 15px; border-radius: 50%; display: inline-block; margin-right: 10px; }
+    .dot-off { background-color: #bbb; }
+    .dot-on { background-color: #4CAF50; box-shadow: 0 0 10px #4CAF50; }
+    
+    /* O Botão Principal */
+    .button {
+      background-color: #008CBA; /* Azul */
+      border: none; color: white; padding: 15px 32px;
+      text-align: center; text-decoration: none; display: inline-block;
+      font-size: 18px; margin: 4px 2px; cursor: pointer;
+      border-radius: 50px; transition: 0.3s; width: 80%;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+    .button:active { transform: scale(0.98); }
+    .button:disabled { background-color: #cccccc; cursor: not-allowed; }
+    .button.busy { background-color: #f44336; } /* Vermelho quando ocupado */
+    
+    /* Rodapé */
+    .footer { font-size: 0.8rem; color: #888; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Gerenciador de Timer</h2>
+    
+    <div class="status-box">
+      Status: <span id="status-text">Aguardando...</span>
+      <span id="status-dot" class="dot dot-off"></span>
+    </div>
 
-// Esta função será chamada quando alguém acessar a rota "/desligar"
-void handleDesligar() {
-  digitalWrite(PINO_LED, LOW); // Desliga o LED
-  ledEstaLigado = false;
-  Serial.println("Comando HTTP: DESLIGAR");
-  
-  // Redireciona o navegador de volta para a página principal
-  server.sendHeader("Location", "/");
-  server.send(302, "text/plain", "Redirecionando...");
-}
+    <button id="btn-acao" class="button" onclick="acionar()">LIGAR TIMER (5s)</button>
+    
+    <div class="footer">Painel de Controle IoT • ESP32</div>
+  </div>
 
-// Esta função constrói e envia a página HTML principal
-void handleRoot() {
-  String html = "<html>";
-  html += "<head><title>Controle de LED - ESP32</title>";
-  // Meta tag para fazer a página se adaptar ao celular
-  html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+<script>
+  // --- Lógica JavaScript (Roda no Celular/Navegador) ---
   
-  // CSS para deixar os botões grandes e amigáveis ao toque
-  html += "<style>";
-  html += " body { font-family: sans-serif; text-align: center; margin-top: 50px; }";
-  html += " a { display: block; padding: 20px; margin: 20px auto; width: 80%;";
-  html += "     font-size: 2em; text-decoration: none; border-radius: 10px; }";
-  html += " .ligar { background-color: #5B5; color: white; }"; // Botão Ligar (Verde)
-  html += " .desligar { background-color: #D33; color: white; }"; // Botão Desligar (Vermelho)
-  html += " .estado { font-size: 1.2em; }";
-  html += "</style></head>";
-  
-  // Corpo da página
-  html += "<body>";
-  html += "<h1>Servidor Web ESP32</h1>";
-  
-  // Mostra o estado atual do LED
-  if (ledEstaLigado) {
-    html += "<p class='estado'>O LED esta: <strong>LIGADO</strong></p>";
-  } else {
-    html += "<p class='estado'>O LED esta: <strong>DESLIGADO</strong></p>";
+  // 1. Função para enviar o comando de ligar
+  function acionar() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("GET", "/ligar", true);
+    xhttp.send();
+    // Não precisamos mudar a tela aqui, a função de atualização fará isso
   }
-  
-  // Adiciona os botões (que são links)
-  html += "<a class='ligar' href='/ligar'>LIGAR O LED</a>";
-  html += "<a class='desligar' href='/desligar'>DESLIGAR O LED</a>";
-  
-  html += "</body></html>";
-  
-  server.send(200, "text/html", html); // Envia a página pronta para o navegador
+
+  // 2. Função que roda a cada 1 segundo para atualizar o status
+  setInterval(function() {
+    getData();
+  }, 1000);
+
+  function getData() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        // O ESP32 retorna "1" (ligado) ou "0" (desligado)
+        var estado = this.responseText;
+        atualizarInterface(estado);
+      }
+    };
+    xhttp.open("GET", "/status", true); // Chama a rota /status
+    xhttp.send();
+  }
+
+  // 3. Atualiza as cores e textos da tela
+  function atualizarInterface(estado) {
+    var btn = document.getElementById("btn-acao");
+    var dot = document.getElementById("status-dot");
+    var txt = document.getElementById("status-text");
+
+    if (estado == "1") {
+      // LIGADO
+      btn.innerHTML = "SISTEMA EM USO...";
+      btn.classList.add("busy"); // Fica vermelho
+      // btn.disabled = true; // Opcional: bloqueia o clique
+      dot.className = "dot dot-on";
+      txt.innerHTML = "ATIVO";
+      txt.style.color = "#4CAF50";
+    } else {
+      // DESLIGADO
+      btn.innerHTML = "LIGAR TIMER (5s)";
+      btn.classList.remove("busy"); // Volta ao azul
+      // btn.disabled = false;
+      dot.className = "dot dot-off";
+      txt.innerHTML = "Ocioso";
+      txt.style.color = "#555";
+    }
+  }
+</script>
+</body>
+</html>
+)rawliteral";
+
+// =================================================================================
+// LÓGICA DO BACKEND (C++)
+// =================================================================================
+
+// Função Central de Lógica (Igual à sua)
+void iniciarTimer(String origem) {
+  digitalWrite(PINO_LED, HIGH);
+  tempoInicioAcionamento = millis();
+  ledAcionado = true;
+  Serial.println("ACAO: " + origem + " -> LED LIGADO.");
 }
 
-// ---------------------------------------------
+// Rota Principal: Entrega a página bonita
+void handleRoot() {
+  server.send(200, "text/html", index_html);
+}
+
+// Rota de Comando: Recebe o pedido do JavaScript para ligar
+void handleLigar() {
+  if (!ledAcionado) {
+    iniciarTimer("Via App Web");
+    server.send(200, "text/plain", "OK");
+  } else {
+    server.send(200, "text/plain", "BUSY");
+  }
+}
+
+// Rota de Status: Informa ao JavaScript se o LED está ligado ou não
+// Isso permite que o celular saiba se alguém apertou o botão físico!
+void handleStatus() {
+  if (ledAcionado) {
+    server.send(200, "text/plain", "1");
+  } else {
+    server.send(200, "text/plain", "0");
+  }
+}
 
 void setup() {
+  Serial.begin(115200);
+  
+  pinMode(PINO_BOTAO, INPUT_PULLUP);
   pinMode(PINO_LED, OUTPUT);
   digitalWrite(PINO_LED, LOW);
-  
-  Serial.begin(115200);
-  Serial.println("Iniciando...");
 
-  // --- 1. Conectar ao Wi-Fi ---
-  Serial.print("Conectando-se a ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, password);
-  
-  // Espera a conexão
+  // Wi-Fi
+  Serial.print("Conectando ao Wi-Fi");
+  WiFi.begin(ssid, password, WIFI_CHANNEL);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    delay(100);
     Serial.print(".");
   }
-  
-  Serial.println("\nWi-Fi Conectado!");
-  Serial.print("IP: ");
-  Serial.println(WiFi.localIP()); // ESSA LINHA É CRUCIAL!
+  Serial.println("\nConectado! IP: " + WiFi.localIP().toString());
 
-  // --- 2. Configurar o Servidor Web ---
+  // Configura Rotas
   server.on("/", handleRoot);
   server.on("/ligar", handleLigar);
-  server.on("/desligar", handleDesligar);
+  server.on("/status", handleStatus); // Nova rota essencial
 
-  server.begin(); // Inicia o servidor web
-  Serial.println("Servidor HTTP iniciado.");
-
-  // --- Adicionado para teste no Wokwi ---
-  Serial.println("\n--- SIMULACAO DE REQUISICAO HTTP ---");
-  Serial.println("Digite 'ligar' ou 'desligar' e pressione Enter.");
+  server.begin();
+  Serial.println("Servidor Web Profissional Iniciado.");
 }
 
 void loop() {
-  // Esta linha processa as requisições HTTP
-  server.handleClient(); 
+  server.handleClient(); // Atende as requisições (App)
 
-  // --- GATILHO DE SIMULAÇÃO ---
-  // Este bloco permite simular os cliques do celular via Monitor Serial
-  if (Serial.available() > 0) {
-    String comando = Serial.readStringUntil('\n');
-    comando.trim();
-    
-    if (comando == "ligar") {
-      // Simula o acesso a /ligar
-      handleLigar();
-    } 
-    else if (comando == "desligar") {
-      // Simula o acesso a /desligar
-      handleDesligar();
+  // --- Lógica do Botão Físico ---
+  if (digitalRead(PINO_BOTAO) == LOW && !ledAcionado) {
+    delay(50); // Debounce
+    if (digitalRead(PINO_BOTAO) == LOW) {
+      iniciarTimer("Via Botao Fisico");
     }
   }
+
+  // --- Lógica do Timer ---
+  if (ledAcionado) {
+    if (millis() - tempoInicioAcionamento >= DURACAO_ACIONAMENTO) {
+      digitalWrite(PINO_LED, LOW);
+      ledAcionado = false;
+      Serial.println("Timer finalizado. LED OFF.");
+    }
+  }
+  
+  delay(2); // Pequena pausa para estabilidade do Wi-Fi simulado
 }

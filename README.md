@@ -1,20 +1,13 @@
 Projeto Smart feeder monitor com ESP32.
 
-Integrantes do projeto:
-KADISH BERNARDO;
-LARISSA SENA PEREIRA;
-MURILO MENDES SANTO SARDÃO
-
-
 Sistema IoT para monitoramento e acionamento de comedouros de gatos. O sistema controla a liberação de ração através de um temporizador preciso, podendo ser acionado tanto remotamente (via Web App no celular) quanto localmente (via botão físico).
 
-O diferencial deste código é a sincronização em tempo real: se alguém apertar o botão físico no comedouro, o aplicativo no celular atualiza o status instantaneamente, mostrando que o sistema está "Em Uso".
+O diferencial deste código é a sincronização em tempo real: se alguém apertar o botão físico no comedouro, o APP web no celular atualiza o status instantaneamente, mostrando que o sistema está "Em Uso".
 
-Para rodar este projeto na sua própria máquina:
-Clone ou Baixe: Baixe os arquivos deste repositório.
-Abra na IDE o arquivo.ino, neste projeto utilizamos o simulador Wokwi.
+Para rodar este projeto clone ou baixe os arquivos deste repositório.
+Abra o arquivo.ino, neste projeto utilizamos o simulador Wokwi.
 
-Instale as Bibliotecas: Certifique-se de que tem as bibliotecas WiFi.h e WebServer.h (geralmente já incluídas no pacote do ESP32).
+Certifique-se de que tem as bibliotecas WiFi.h e WebServer.h (geralmente já incluídas no pacote do ESP32) no simulador.
 Altere as Credenciais: No topo do código, altere as seguintes linhas com o nome e a senha da sua rede Wi-Fi em:
 
 const char* ssid = "SEU_WIFI_AQUI";
@@ -23,7 +16,8 @@ const char* password = "SUA_SENHA_AQUI";
 (se não estiver usando o simulador Wokwi).
 
 Carregue o Código: Conecte seu ESP32, se estiver utilizando a placa do ESP32, ao PC e faça o upload do código.
-Caso contrário, é possível prosseguir apenas simu vom a simulação no Wokwi. 
+Caso contrário, é possível prosseguir apenas com a simulação no Wokwi. 
+
 Encontre o IP: conecte na velocidade em 115200. O ESP32 irá se conectar ao Wi-Fi e imprimir o endereço de IP dele.
 
 ex: Conectado!
